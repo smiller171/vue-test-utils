@@ -63,12 +63,12 @@ function addSlotToVm (vm, slotName, slotValue) {
       throwError('vueTemplateCompiler is undefined, you must pass components explicitly if vue-template-compiler is undefined');
     }
     if (window.navigator.userAgent.match(/PhantomJS/i)) {
-      throwError('option.slots does not support strings in PhantomJS. Please use Puppeteer, or pass a component');
+      throwError('the slots option does not support strings in PhantomJS. Please use Puppeteer, or pass a component.');
     }
     var domParser = new window.DOMParser();
-    var document = domParser.parseFromString(slotValue, 'text/html');
+    var _document = domParser.parseFromString(slotValue, 'text/html');
     var _slotValue = slotValue.trim();
-    if (_slotValue[0] === '<' && _slotValue[_slotValue.length - 1] === '>' && document.body.childElementCount === 1) {
+    if (_slotValue[0] === '<' && _slotValue[_slotValue.length - 1] === '>' && _document.body.childElementCount === 1) {
       elem = vm.$createElement(vueTemplateCompiler.compileToFunctions(slotValue));
     } else {
       var compiledResult = vueTemplateCompiler.compileToFunctions(("<div>" + slotValue + "{{ }}</div>"));
@@ -105,6 +105,21 @@ function addSlots (vm, slots) {
     } else {
       addSlotToVm(vm, key, slots[key]);
     }
+  });
+}
+
+// 
+
+function addScopedSlots (vm, scopedSlots) {
+  Object.keys(scopedSlots).forEach(function (key) {
+    var template = scopedSlots[key].trim();
+    if (template.substr(0, 9) === '<template') {
+      throwError('the scopedSlots option does not support a template tag as the root element.');
+    }
+    var domParser = new window.DOMParser();
+    var _document = domParser.parseFromString(template, 'text/html');
+    vm.$_vueTestUtils_scopedSlots[key] = vueTemplateCompiler.compileToFunctions(template).render;
+    vm.$_vueTestUtils_slotScopes[key] = _document.body.firstChild.getAttribute('slot-scope');
   });
 }
 
@@ -448,6 +463,40 @@ function createInstance (
   addAttrs(vm, options.attrs);
   addListeners(vm, options.listeners);
 
+  if (options.scopedSlots) {
+    if (window.navigator.userAgent.match(/PhantomJS/i)) {
+      throwError('the scopedSlots option does not support PhantomJS. Please use Puppeteer, or pass a component.');
+    }
+    var vueVersion = Number(((Vue.version.split('.')[0]) + "." + (Vue.version.split('.')[1])));
+    if (vueVersion >= 2.5) {
+      vm.$_vueTestUtils_scopedSlots = {};
+      vm.$_vueTestUtils_slotScopes = {};
+      var renderSlot = vm._renderProxy._t;
+
+      vm._renderProxy._t = function (name, feedback, props, bindObject) {
+        var scopedSlotFn = vm.$_vueTestUtils_scopedSlots[name];
+        var slotScope = vm.$_vueTestUtils_slotScopes[name];
+        if (scopedSlotFn) {
+          props = Object.assign({}, bindObject, props);
+          var proxy = {};
+          var helpers = ['_c', '_o', '_n', '_s', '_l', '_t', '_q', '_i', '_m', '_f', '_k', '_b', '_v', '_e', '_u', '_g'];
+          helpers.forEach(function (key) {
+            proxy[key] = vm._renderProxy[key];
+          });
+          proxy[slotScope] = props;
+          return scopedSlotFn.call(proxy)
+        } else {
+          return renderSlot.call(vm._renderProxy, name, feedback, props, bindObject)
+        }
+      };
+
+      // $FlowIgnore
+      addScopedSlots(vm, options.scopedSlots);
+    } else {
+      throwError('the scopedSlots option is only supported in vue@2.5+.');
+    }
+  }
+
   if (options.slots) {
     addSlots(vm, options.slots);
   }
@@ -581,13 +630,11 @@ function componentNeedsCompiling$1 (component) {
 }
 
 function isRefSelector$1 (refOptionsObject) {
-  if (typeof refOptionsObject !== 'object' || !Object.keys(refOptionsObject || {}).length) {
+  if (typeof refOptionsObject !== 'object' || Object.keys(refOptionsObject || {}).length !== 1) {
     return false
   }
 
-  return Object
-    .keys(refOptionsObject)
-    .every(function (key) { return ['ref'].includes(key) && typeof refOptionsObject[key] === 'string'; })
+  return typeof refOptionsObject.ref === 'string'
 }
 
 function isNameSelector$1 (nameOptionsObject) {
@@ -1917,12 +1964,12 @@ function addSlotToVm$1 (vm, slotName, slotValue) {
       throwError$1('vueTemplateCompiler is undefined, you must pass components explicitly if vue-template-compiler is undefined');
     }
     if (window.navigator.userAgent.match(/PhantomJS/i)) {
-      throwError$1('option.slots does not support strings in PhantomJS. Please use Puppeteer, or pass a component');
+      throwError$1('the slots option does not support strings in PhantomJS. Please use Puppeteer, or pass a component.');
     }
     var domParser = new window.DOMParser();
-    var document = domParser.parseFromString(slotValue, 'text/html');
+    var _document = domParser.parseFromString(slotValue, 'text/html');
     var _slotValue = slotValue.trim();
-    if (_slotValue[0] === '<' && _slotValue[_slotValue.length - 1] === '>' && document.body.childElementCount === 1) {
+    if (_slotValue[0] === '<' && _slotValue[_slotValue.length - 1] === '>' && _document.body.childElementCount === 1) {
       elem = vm.$createElement(vueTemplateCompiler__default.compileToFunctions(slotValue));
     } else {
       var compiledResult = vueTemplateCompiler__default.compileToFunctions(("<div>" + slotValue + "{{ }}</div>"));
@@ -1959,6 +2006,21 @@ function addSlots$1 (vm, slots) {
     } else {
       addSlotToVm$1(vm, key, slots[key]);
     }
+  });
+}
+
+// 
+
+function addScopedSlots$1 (vm, scopedSlots) {
+  Object.keys(scopedSlots).forEach(function (key) {
+    var template = scopedSlots[key].trim();
+    if (template.substr(0, 9) === '<template') {
+      throwError$1('the scopedSlots option does not support a template tag as the root element.');
+    }
+    var domParser = new window.DOMParser();
+    var _document = domParser.parseFromString(template, 'text/html');
+    vm.$_vueTestUtils_scopedSlots[key] = vueTemplateCompiler__default.compileToFunctions(template).render;
+    vm.$_vueTestUtils_slotScopes[key] = _document.body.firstChild.getAttribute('slot-scope');
   });
 }
 
@@ -2352,6 +2414,40 @@ function createInstance$1 (
 
   addAttrs$1(vm, options.attrs);
   addListeners$1(vm, options.listeners);
+
+  if (options.scopedSlots) {
+    if (window.navigator.userAgent.match(/PhantomJS/i)) {
+      throwError$1('the scopedSlots option does not support PhantomJS. Please use Puppeteer, or pass a component.');
+    }
+    var vueVersion = Number(((Vue$1.version.split('.')[0]) + "." + (Vue$1.version.split('.')[1])));
+    if (vueVersion >= 2.5) {
+      vm.$_vueTestUtils_scopedSlots = {};
+      vm.$_vueTestUtils_slotScopes = {};
+      var renderSlot = vm._renderProxy._t;
+
+      vm._renderProxy._t = function (name, feedback, props, bindObject) {
+        var scopedSlotFn = vm.$_vueTestUtils_scopedSlots[name];
+        var slotScope = vm.$_vueTestUtils_slotScopes[name];
+        if (scopedSlotFn) {
+          props = Object.assign({}, bindObject, props);
+          var proxy = {};
+          var helpers = ['_c', '_o', '_n', '_s', '_l', '_t', '_q', '_i', '_m', '_f', '_k', '_b', '_v', '_e', '_u', '_g'];
+          helpers.forEach(function (key) {
+            proxy[key] = vm._renderProxy[key];
+          });
+          proxy[slotScope] = props;
+          return scopedSlotFn.call(proxy)
+        } else {
+          return renderSlot.call(vm._renderProxy, name, feedback, props, bindObject)
+        }
+      };
+
+      // $FlowIgnore
+      addScopedSlots$1(vm, options.scopedSlots);
+    } else {
+      throwError$1('the scopedSlots option is only supported in vue@2.5+.');
+    }
+  }
 
   if (options.slots) {
     addSlots$1(vm, options.slots);
@@ -4965,14 +5061,14 @@ function createLocalVue () {
 
 // 
 
-function getStubs (optionStubs, config) {
-  if (optionStubs ||
-    (config.stubs && Object.keys(config.stubs).length > 0)) {
-    if (Array.isArray(optionStubs)) {
-      return optionStubs.concat( Object.keys(config.stubs || {}))
+function getOptions (key, options, config) {
+  if (options ||
+    (config[key] && Object.keys(config[key]).length > 0)) {
+    if (Array.isArray(options)) {
+      return options.concat( Object.keys(config[key] || {}))
     } else {
-      return Object.assign({}, config.stubs,
-        optionStubs)
+      return Object.assign({}, config[key],
+        options)
     }
   }
 }
@@ -4982,7 +5078,9 @@ function mergeOptions (
   config
 ) {
   return Object.assign({}, options,
-    {stubs: getStubs(options.stubs, config)})
+    {stubs: getOptions('stubs', options.stubs, config),
+    mocks: getOptions('mocks', options.mocks, config),
+    methods: getOptions('methods', options.methods, config)})
 }
 
 // 
@@ -5131,7 +5229,9 @@ var config = {
   stubs: {
     transition: TransitionStub,
     'transition-group': TransitionGroupStub
-  }
+  },
+  mocks: {},
+  methods: {}
 };
 
 // 
@@ -5237,14 +5337,14 @@ var vueTestUtils = index;
 
 // 
 
-function getStubs$1 (optionStubs, config) {
-  if (optionStubs ||
-    (config.stubs && Object.keys(config.stubs).length > 0)) {
-    if (Array.isArray(optionStubs)) {
-      return optionStubs.concat( Object.keys(config.stubs || {}))
+function getOptions$1 (key, options, config) {
+  if (options ||
+    (config[key] && Object.keys(config[key]).length > 0)) {
+    if (Array.isArray(options)) {
+      return options.concat( Object.keys(config[key] || {}))
     } else {
-      return Object.assign({}, config.stubs,
-        optionStubs)
+      return Object.assign({}, config[key],
+        options)
     }
   }
 }
@@ -5254,7 +5354,9 @@ function mergeOptions$1 (
   config
 ) {
   return Object.assign({}, options,
-    {stubs: getStubs$1(options.stubs, config)})
+    {stubs: getOptions$1('stubs', options.stubs, config),
+    mocks: getOptions$1('mocks', options.mocks, config),
+    methods: getOptions$1('methods', options.methods, config)})
 }
 
 var config$1 = vueTestUtils.config

@@ -10,14 +10,4 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 ### Features
 
 * add scoped slots option ([#507](https://github.com/smiller171/vue-test-utils/issues/507)) ([e6a54b2](https://github.com/smiller171/vue-test-utils/commit/e6a54b2))
-
-
-
-
-<a name="1.0.0"></a>
-# [1.0.0](https://github.com/EddYerburgh/vue-test-utils/compare/v1.0.0-beta.13...v1.0.0) (2018-03-01)
-
-
-
-
-**Note:** Version bump only for package create-instance
+* allow mocks and methods to be set in config object ([#531](https://github.com/smiller171/vue-test-utils/issues/531)) ([9960f7c](https://github.com/smiller171/vue-test-utils/commit/9960f7c))
